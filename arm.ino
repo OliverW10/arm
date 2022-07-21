@@ -20,9 +20,8 @@ void loop(){
     byte angleYaw = message.substring(cur, message.indexOf(",", cur)).toInt();
     cur = message.indexOf(",") + 1;
     byte anglePitch = message.substring(cur, message.indexOf(",", cur)).toInt();
-    cur = message.indexOf(",") + 1;
+    cur = message.indexOf(",", cur) + 1;
     byte angleWrist = message.substring(cur, message.indexOf(",", cur)).toInt();
-    cur = message.indexOf(",") + 1;
     if(!(angleYaw == 0 && anglePitch == 0 && angleWrist == 0)){
       servoYaw.write(angleYaw);
       servoPitch.write(anglePitch);
