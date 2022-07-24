@@ -1,3 +1,4 @@
+import math
 from math import atan2, sqrt
 
 def project(x, y, z, fx, fy):
@@ -19,3 +20,7 @@ def clamp(x, low, high):
     if low > high:
         high, low = low, high
     return max(low, min(high, x))
+
+def rate_limit(n, goal, speed):
+    error = goal - n
+    return n + math.copysign(min(abs(error), speed), error)

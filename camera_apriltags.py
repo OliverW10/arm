@@ -1,4 +1,3 @@
-import math
 import time
 import cv2
 from dt_apriltags import Detector, Detection
@@ -17,16 +16,16 @@ fx, fy = 333, 333
 fx, fy = fx/scale_ratio, fy/scale_ratio
 cxr, cyr = 0.5, 0.5
 
-tag_size = 0.038
+tag_size = 0.03
 
-servo_height = -0.035
+servo_height = -0.04
 arm_tag_ids = {
-    6:[0, 0.055, servo_height],
-    7:[0.055, 0, servo_height],
-    8: [0, -0.05, servo_height],
+    6:[0, 0.04, servo_height],
+    # 7:[0.05, 0.005, servo_height],
+    8: [0, -0.04, servo_height],
 }
 goal_tag_ids = [0, 1, 2, 3, 4, 5]
-cube_size = 0.05
+cube_size = 0.04
 
 # target/cube: where the focused object is
 # goal: where we want the end effector to be
@@ -35,7 +34,7 @@ def good_tag(tag: Detection) -> bool:
     return tag.hamming <= 1 and tag.decision_margin > 1.5
 
 class Vision:
-    def __init__(self, display=True, debug=True):
+    def __init__(self, capture:cv2.VideoCapture, display: Union[bool, str], debug=True):
         self.at_detector = Detector(searchpath=['apriltags'],
                             families='tag16h5',
                             nthreads=4,
@@ -49,14 +48,20 @@ class Vision:
         self.frame_counter = 0
         self.debug = debug
         self.display = display
+        self.cap = capture
 
 
         self.target_pos = np.array([0, 0, 0], dtype=np.float64)
         self.cube_pos = np.array([0, 0, 0], dtype=np.float64)
         self.arm_pos = np.array([0, 0, 0], dtype=np.float64)
+        self.arm_rot = None
 
-    def run(self, frame: np.ndarray) -> Optional[Tuple[float, float, float]]:
-        start_time = time.perf_counter()
+    def run(self) -> Optional[Tuple[float, float, float]]:
+        ret, frame = self.cap.read()
+        if not ret or frame is None:
+            print("no camera frame")
+            quit()
+
         frame = cv2.resize(frame, None, fx=1/scale_ratio, fy=1/scale_ratio)
         
         # if its the first frame allocate images
@@ -77,6 +82,7 @@ class Vision:
             self.target_pos = np.array([0, 0, 0], dtype=np.float64)
             for tag in target_tags:
                 # find the center of the cube from the tag pose
+                print(f'{1000*tag.pose_err:.5f}')
                 cube_pos = np.reshape(tag.pose_t, (3,)) + tag.pose_R@[0, 0, cube_size/2]
                 self.target_pos += cube_pos
             # average cube centers from all tags
@@ -90,14 +96,16 @@ class Vision:
                 arm_pos = np.reshape(tag.pose_t, (3,)) + (tag.pose_R@arm_tag_ids[tag.tag_id])
                 self.arm_pos += arm_pos
             self.arm_pos /= len(arm_tags)
+            # TODO: average rotations
+            self.arm_rot = arm_tags[0].pose_R
 
-        if len(arm_tags) and len(target_tags):
+        if len(target_tags) and sum(self.arm_pos) != 0 and self.arm_rot is not None:
             has_targets = True
             # position of goal from arm in world coordinate system
             rel_pos_world = self.target_pos - self.arm_pos
             # get arm to goal in arm coordinate space
             # rotate by arm rotation
-            rel_pos_arm = rel_pos_world@arm_tags[0].pose_R
+            rel_pos_arm = rel_pos_world@self.arm_rot
         else:
             has_targets = False
 
@@ -138,7 +146,7 @@ class Vision:
                 cv2.line(frame, (round(x1)+w2, round(y1)+h2), (round(x2)+w2, round(y2)+h2), (255, 0, 0), 3)
 
         if self.display:
-            cv2.imshow('frame', frame)
+            cv2.imshow(self.display, frame)
 
         self.frame_counter += 1
         if self.frame_counter > 30 and self.debug:
@@ -150,3 +158,23 @@ class Vision:
 
     def __del__(self):
         cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    cap = cv2.VideoCapture(0)
+    vision = Vision(True, True)
+
+    while True:
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            print("no camera frame")
+
+        offset = vision.run(frame)
+        if not offset is None:
+            print(offset)
+
+        if cv2.waitKey(1) == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
