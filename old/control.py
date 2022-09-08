@@ -27,6 +27,8 @@ program_start = time.time()
 running = True
 scale = 0.4
 height = 0
+height_vel = 0
+height_max_speed = 0.1
 
 while running:
     screen.fill((0, 0, 0))
@@ -35,10 +37,16 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                height -= 0.05
+                height_vel -= height_max_speed
             if event.key == pygame.K_DOWN:
-                height += 0.05
+                height_vel += height_max_speed
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_UP:
+                height_vel += height_max_speed
+            if event.key == pygame.K_DOWN:
+                height_vel -= height_max_speed
 
+    height += height_vel*0.05
     mouse_x, mouse_y = pygame.mouse.get_pos()
     x, y = mouse_x/400-1, mouse_y/300-1
     goal = [scale*y, scale*x, height]
