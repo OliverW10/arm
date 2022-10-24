@@ -12,8 +12,12 @@ void printJntAngles(KDL::JntArray& jnts){
 	std::cout << "\b\b \n";
 }
 
+// ArmKinematics::weights = Eigen::MatrixXd::Zero(6, 1);
 
-ArmKinematics::ArmKinematics(){
+ArmKinematics::ArmKinematics()
+    : fk(KDL::ChainFkSolverPos_recursive(chain))
+    , ik(KDL::ChainIkSolverPos_LMA(chain, 0.1, 100))
+{
 	// define arm segments
 	chain.addSegment(
 		KDL::Segment(
@@ -32,19 +36,13 @@ ArmKinematics::ArmKinematics(){
 	));
 
 
-	// forwards kinematics solver
-	fk = KDL::ChainFkSolverPos_recursive(chain);
 	// set joint angles
-	// joint_angles = KDL::JntArray(chain.getNrOfJoints());
+	joint_angles = KDL::JntArray(chain.getNrOfJoints());
 	KDL::SetToZero(joint_angles);
 	joint_angles(0) = 0.0;
 	double d = 0.1;
 	joint_angles(1) = -M_PI/2 + d + 0.3;
 	joint_angles(2) = M_PI - 2*d;
-    
-	weights = Eigen::MatrixXd::Zero(6, 1);
-	// std::cout << weights << "\n";
-	ik = KDL::ChainIkSolverPos_LMA(chain, weights, 0.01, 100);
 }
 
 void ArmKinematics::forwards(KDL::JntArray& _joint_angles, KDL::Frame& out){

@@ -18,11 +18,11 @@ public:
 	void backwards(KDL::Frame& goal, KDL::JntArray& out);
 
 	KDL::JntArray joint_angles;
+	static Eigen::MatrixXd weights;
 private:
 	KDL::ChainFkSolverPos_recursive fk;
 	KDL::ChainIkSolverPos_LMA ik;
 	KDL::Chain chain;
-	Eigen::MatrixXd weights;
 };
 
 void printFrame(KDL::Frame& frame);
