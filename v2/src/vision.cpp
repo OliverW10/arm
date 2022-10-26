@@ -36,24 +36,22 @@ void Vision::execute()
     bool got_frame = pipe.poll_for_frames(frame);
     if (got_frame)
     {
-        last_pose = &(frame->get_pose_frame());
-        last_pose->get_data()
-        last_frame = &(frame->get_fisheye_frame());
+        last_frame = frame;
     }
 }
 
-KDL::Vector Vision::getPose()
+rs2_pose Vision::getPose()
 {
+    return last_frame->get_pose_frame().get_pose_data();
 }
 
+Eigen::Matrix4f poseToMat(rs2_pose rs_pose){
+    // create matrix
 
-// coverts a rs vector to kdl vector
-// this takes a rs2_vector not a rs2::vec3 (idk why there's two)
-KDL::Vector RsToKdl_Vec(rs2_vector vector){
-    return KDL::Vector(vector.x, vector.y, vector.z);
-}
+    // add pose rotation matrix to full matrix
 
-// converts a rs pose to kdl frame
-KDL::Frame RsToKdl_Pose(rs2_pose& pose){
-    return KDL::Frame(KDL::Rotation(pose.rotation), RsToKdl_Vec(pose.translation));
+    // add pose transformation to full matrix
+
+    // set bottom row
+
 }

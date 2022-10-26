@@ -1,16 +1,18 @@
+#include <Eigen/Dense>
 #include "kinematics.hpp"
 #include "vision.hpp"
+#include <math.h>
 
 
 int main(){
     ArmKinematics arm;
-	KDL::Frame end_pose;
-	arm.forwards(end_pose);
-	std::cout << "joint angles: ";
-	printJntAngles(arm.joint_angles);
-	std::cout << "forwards: " << end_pose.p.x() << ", " << end_pose.p.y() << ", " << end_pose.p.z() << "\n";
+    Eigen::Matrix<float, num_joints, 1> joint_angles { M_PI/2, 0, 0};
+    Eigen::Matrix4f end_pose;
+	arm.forwards(joint_angles, end_pose);
 
-    while(true){
-        
-    }
+    // Vision vision;
+    // while(true){
+    //     vision.execute(); 
+    //     Eigen::Matrix4f cameraPose = vision.getPose();
+    // }
 }
