@@ -7,27 +7,45 @@
 
 const int num_joints = 3;
 
-// a class to compute kiematics for my arm
+typedef Eigen::Array<double, num_joints, 1> JntArray;
+
+
 class ArmKinematics{
 public:
 	ArmKinematics();
 
-    void forwards(Eigen::Matrix<float, num_joints, 1> joint_angles, Eigen::Matrix4f &out);
-    void backwards(Eigen::Vector3f target, Eigen::Matrix<float, num_joints, 1> &out);
-    // checks if the position is possible to reach
-    bool isReachable(Eigen::Vector3f target);
-    // checks if the joint values are within the min and max constraints
-    bool isAchiveable(Eigen::Matrix<float, num_joints, 1> joint_angles);
-private:
+    Eigen::Vector3d forwards(JntArray joint_angles);
 
-    Eigen::Matrix<float, num_joints, 1> minAngles;
-    Eigen::Matrix<float, num_joints, 1> maxAngles;
+    // calculates inverse kinematics geometrically
+    // only works for:
+    // - 3 joints around: z, y, y
+    // - with displacments in only x between joints
+    // - a reachable target
+    bool backwards_geo(Eigen::Vector3d target, JntArray &out);
+
+    // calculates inverse kinematics numerically
+    // should work for any arm with a valid forwards function
+    bool backwards_num(Eigen::Vector3d target, JntArray &out);
+
+    // checks if the position is possible to reach
+    bool isReachable(Eigen::Vector3d target);
+
+    // checks if the joint values are within the min and max constraints
+    bool isJointsAchiveable(JntArray joint_angles);
+
+    // generates a random valid joint array
+    void randomJntArray(JntArray &out);
+private:
+    double getError(JntArray joints, Eigen::Vector3d target);
+    JntArray min_angles;
+    JntArray max_angles;
+
 
     // the displacements between each joint frame
     // first item is the displacments between the base frame and the first joint
-    Eigen::Vector3f displacements[num_joints+1];
-    // the axis around which the joint rotates, use Eigen::Vector3f::Unit?()
-    Eigen::Vector3f joint_axis[num_joints];
+    Eigen::Vector3d displacements[num_joints+1];
+    // the axis around which the joint rotates, use Eigen::Vector3d::Unit?()
+    Eigen::Vector3d joint_axis[num_joints];
 };
 
 #endif // KINEMATICS
