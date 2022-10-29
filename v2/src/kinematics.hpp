@@ -31,14 +31,15 @@ public:
     bool isReachable(Eigen::Vector3d target);
 
     // checks if the joint values are within the min and max constraints
-    bool isJointsAchiveable(JntArray joint_angles);
+    bool isJointsValid(JntArray joint_angles);
 
     // generates a random valid joint array
     void randomJntArray(JntArray &out);
+
+    const JntArray min_angles = {-M_PI / 2, 0, -M_PI};
+    const JntArray max_angles = {M_PI / 2, M_PI, 0};
 private:
     double getError(JntArray joints, Eigen::Vector3d target);
-    JntArray min_angles;
-    JntArray max_angles;
 
 
     // the displacements between each joint frame

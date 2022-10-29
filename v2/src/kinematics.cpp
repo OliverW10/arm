@@ -2,17 +2,17 @@
 
 ArmKinematics::ArmKinematics()
 {
-    min_angles = {-M_PI / 2, 0, -M_PI};
-    max_angles = {M_PI / 2, M_PI, 0};
     // TODO measure these
     displacements[0] << 0, 0, 0;
-    displacements[1] << 0.05, 0, 0;
-    displacements[2] << 0.15, 0, 0;
-    displacements[3] << 0.15, 0, 0;
+    displacements[1] << 0.05, 0.015, 0.01;
+    displacements[2] << 0.15, 0.015, 0.01;
+    displacements[3] << 0.17, 0, 0;
 
     joint_axis[0] = Eigen::Vector3d::UnitZ();
     joint_axis[1] = Eigen::Vector3d::UnitY();
     joint_axis[2] = Eigen::Vector3d::UnitY();
+
+    srand((unsigned int) time(0));
 }
 
 // #define DEBUG_FORWARDS
@@ -43,7 +43,7 @@ Eigen::Vector3d ArmKinematics::forwards(JntArray joint_angles)
         joint_transform(3, 2) = 0;
         joint_transform(3, 3) = 1;
         // create rotation matrix
-        joint_transform.block<3, 3>(0, 0) = Eigen::AngleAxisd(joint_angles(i), joint_axis[i]).matrix();
+        joint_transform.block<3, 3>(0, 0) = Eigen::AngleAxisd(-joint_angles(i), joint_axis[i]).matrix();
         // get transform vector
         joint_transform.block<3, 1>(0, 3) = displacements[i];
 
@@ -92,8 +92,9 @@ bool ArmKinematics::backwards_geo(Eigen::Vector3d target, JntArray &out)
     // squared used in cosine rule
     double d_squared = d * d;
     out(1) = atan2(z, dz) + acos((a * a + d_squared - b * b) / (2 * a * d));
-    out(2) = -acos((a * a + b * b - d_squared) / (2 * a * b));
-    return true;
+    // gets pi-interiour angle and *-1 all
+    out(2) = acos((a * a + b * b - d_squared) / (2 * a * b)) - M_PI;
+    return !(out.isNaN().any() || out.isInf().any());
 }
 
 bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
@@ -101,22 +102,25 @@ bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
     // delta used to calculate derivative
     const double h = 1e-9;
     // how much to move towards esimated zero
-    const double step = 0.5;
-    const double allowable_error = 1e-5;
+    const double step = 0.05;
+    const double allowable_error = 0.0005; // 0.5mm
 
     int tries = 0;
     int iterations = 0;
 
-    // initalize to random position
-    // beacuse this arm only has one valid solution for each position this works
-    randomJntArray(out);
+    // initalize to result of geometric backwards
+    bool ret = backwards_geo(target, out);
+    if(!ret){
+        return false;
+    }
+    // randomJntArray(out);
     JntArray next_joints;
     double base_error = 1e10;
     while (base_error > allowable_error)
     {
         // get the error of current joint angles
         base_error = getError(out, target);
-        std::cout << "\nbase error: " << base_error << "\n";
+        // std::cout << "\nbase error: " << base_error*100 << "cm\n";
 
         // find the partial derivative with resprect to each joint
         // and move step% of the way to its estimated zero
@@ -124,35 +128,35 @@ bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
         {
             out(i) += h;
             double d = (base_error - getError(out, target)) / h;
-            std::cout << "joint " << i << " derivative: " << d << "\n";
             out(i) -= h;
             next_joints(i) = out(i) + d * step;
+            // std::cout << "joint " << i << " derivative: " << d << "\tangle: " << next_joints(i) << "\n";
         }
         out = next_joints;
         // check if joints have left the achiveable area
-        if (isJointsAchiveable(out) == false)
+        if (isJointsValid(out) == false)
         {
             // reset to random joints
             randomJntArray(out);
             std::cout << "reset\n";
-            if(isJointsAchiveable(out) == false){
+            if(isJointsValid(out) == false){
                 std::cout << "created joint is bad\n";
             }
             tries ++;
             iterations = 0;
             // prevent failure if position is unreachable
-            if (tries > 15)
+            if (tries > 5)
             {
                 return false;
             }
         }
         iterations ++;
-        if (iterations > 1000){
+        if (iterations > 500){
             std::cout << "reached iteration cap\n";
             return true; // ???
         }
     }
-    std::cout << "reached desired accuracy\n";
+    std::cout << "reached desired accuracy in " << iterations << " iterations\n";
     return true;
 }
 
@@ -160,7 +164,7 @@ bool ArmKinematics::isReachable(Eigen::Vector3d target)
 {
 }
 
-bool ArmKinematics::isJointsAchiveable(JntArray joint_angles)
+bool ArmKinematics::isJointsValid(JntArray joint_angles)
 {
     return (
         (joint_angles.array() > min_angles).all() &&
