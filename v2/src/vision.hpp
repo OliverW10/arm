@@ -25,6 +25,6 @@ private:
     // rs2::pose_frame* last_pose;
 };
 
-Eigen::Matrix4f poseToMat(rs2_pose rs_pose);
+Eigen::Matrix4d poseToMat(const rs2_pose &rs_pose);
 
 #endif // VISION

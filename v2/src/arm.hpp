@@ -12,13 +12,13 @@
 
 
 #define SIM
-#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 class Arm{
 public:
     Arm(int servo_pins[]);
     ~Arm();
-	bool setGoal(Eigen::Vector3d goal);
+	bool setGoal(const Eigen::Vector3d &goal);
     void execute();
 private:
     // maximum joint rotation speed (rad/s) and accel (rad/s^2)

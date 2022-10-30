@@ -1,7 +1,7 @@
-FLAGS := -g -std=c++17
+FLAGS := -g -std=c++17 -O -pg
 
 build: main kinematics arm vision
-	g++ -o build/main build/main.o build/kinematics.o build/vision.o build/arm.o -Lpigpio/build -lpigpio -lrealsense2
+	g++ -o build/main build/main.o build/kinematics.o build/vision.o build/arm.o -Lpigpio/build -lpigpio -lrealsense2 -pg
 	@echo "\033[0;32mBUILD SUCCESSFULL\\033[0m\n\n"
 
 main: src/main.cpp

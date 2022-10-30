@@ -17,7 +17,7 @@ ArmKinematics::ArmKinematics()
 
 // #define DEBUG_FORWARDS
 
-Eigen::Vector3d ArmKinematics::forwards(JntArray joint_angles)
+Eigen::Vector3d ArmKinematics::forwards(const JntArray &joint_angles)
 {
     /*
     does the forwards kinematics by multiplying transformation matricies
@@ -69,7 +69,7 @@ Eigen::Vector3d ArmKinematics::forwards(JntArray joint_angles)
     return out.block<3, 1>(0, 3);
 }
 
-bool ArmKinematics::backwards_geo(Eigen::Vector3d target, JntArray &out)
+bool ArmKinematics::backwards_geo(const Eigen::Vector3d &target, JntArray &out)
 {
     // does inverse kinematics geometrically, assumes each joint's displacment is only in x
     // TODO: investigate other ways to do analytic ik
@@ -97,7 +97,7 @@ bool ArmKinematics::backwards_geo(Eigen::Vector3d target, JntArray &out)
     return !(out.isNaN().any() || out.isInf().any());
 }
 
-bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
+bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
 {
     // delta used to calculate derivative
     const double h = 1e-9;
@@ -138,7 +138,7 @@ bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
         {
             // reset to random joints
             randomJntArray(out);
-            std::cout << "reset\n";
+            std::cout << "IK: reached invalid joint position, reinitializing randomly\n";
             if(isJointsValid(out) == false){
                 std::cout << "created joint is bad\n";
             }
@@ -152,19 +152,20 @@ bool ArmKinematics::backwards_num(Eigen::Vector3d target, JntArray &out)
         }
         iterations ++;
         if (iterations > 500){
-            std::cout << "reached iteration cap\n";
-            return true; // ???
+            std::cout << "IK: reached iteration cap of 500 with an error of " << base_error*100.0 << "cm\n";
+            return true; // still go something so return that
         }
     }
-    std::cout << "reached desired accuracy in " << iterations << " iterations\n";
+    std::cout << "IK: reached desired accuracy of " << allowable_error*100.0 << "cm in " << iterations << " iterations\n";
     return true;
 }
 
-bool ArmKinematics::isReachable(Eigen::Vector3d target)
+bool ArmKinematics::isReachable(const Eigen::Vector3d &target)
 {
+    return true;
 }
 
-bool ArmKinematics::isJointsValid(JntArray joint_angles)
+bool ArmKinematics::isJointsValid(const JntArray &joint_angles)
 {
     return (
         (joint_angles.array() > min_angles).all() &&
@@ -180,7 +181,7 @@ void ArmKinematics::randomJntArray(JntArray &out)
     out = out * (max_angles - min_angles) + min_angles;
 }
 
-double ArmKinematics::getError(JntArray joints, Eigen::Vector3d target)
+double ArmKinematics::getError(const JntArray &joints, const Eigen::Vector3d &target)
 {
     return (forwards(joints) - target).norm();
 }

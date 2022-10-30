@@ -24,7 +24,7 @@ Arm::Arm(int _servo_pins[]) : kinematics(ArmKinematics()){
         abort();
     }
     #endif
-    jnt_goal = JntArray(0, M_PI, -M_PI);
+    jnt_goal = JntArray(0, M_PI/2, -M_PI/2);
     pos_goal = kinematics.forwards(jnt_goal);
     // assume it starts in startup position since we cant read it actual position
     jnt_positions = jnt_goal;
@@ -44,9 +44,11 @@ Arm::~Arm(){
     #endif
 }
 
-bool Arm::setGoal(Eigen::Vector3d goal){
+bool Arm::setGoal(const Eigen::Vector3d goal){
     pos_goal = goal;
-    return kinematics.backwards_num(goal, jnt_goal);
+    bool success = kinematics.backwards_num(goal, jnt_goal);
+    // std::cout << "goal:\n" << jnt_goal << "\n";
+    return success;
 }
 
 void Arm::execute(){
@@ -63,10 +65,14 @@ void Arm::execute(){
         double cur_max_speed = sqrt(a_error * MAX_ACCEL);
         // get what speed we want to be going at now
         // min of maximum current speed and maximum achiveable joint speed in direction of error
-        double target_speed = copysign(std::min(cur_max_speed, MAX_SPEED), error);
-        double accel = std::clamp(target_speed - jnt_speeds[i], -MAX_ACCEL, MAX_ACCEL);
-        jnt_speeds[i] -= accel * dt;
+        double target_speed = copysign(std::min(cur_max_speed, MAX_SPEED), -error);
+        double accel = std::clamp((target_speed - jnt_speeds[i])/dt, -MAX_ACCEL, MAX_ACCEL);
+        jnt_speeds[i] += accel * dt;
         jnt_positions[i] += jnt_speeds[i] * dt;
+        // std::cout << "joint max speed: " << cur_max_speed
+        // << ",\tcur speed: " << jnt_speeds[i]
+        // << ",\ttarget speed: " << target_speed
+        // << ",\taccel: " << accel << "\n";
     }
 
     sendCommands();
@@ -75,7 +81,7 @@ void Arm::execute(){
 void Arm::sendCommands(){
 
     #ifdef DEBUG_PRINT
-    std::cout << "sending [(angle, pwm),]: ";
+    std::cout << "sending [(angle, pwm)]: ";
     #endif
     for(int i = 0; i < num_joints; ++i){
         double angle = jnt_positions[i]+jnt_offsets[i];

@@ -45,13 +45,23 @@ rs2_pose Vision::getPose()
     return last_frame->get_pose_frame().get_pose_data();
 }
 
-Eigen::Matrix4f poseToMat(rs2_pose rs_pose){
+Eigen::Matrix4d poseToMat(const rs2_pose &rs_pose){
     // create matrix
+    Eigen::Matrix4d mat;
 
     // add pose rotation matrix to full matrix
+    Eigen::Quaterniond quat(rs_pose.rotation.w, rs_pose.rotation.x, rs_pose.rotation.y, rs_pose.rotation.z);
+    mat.block<3, 3>(0, 0) = quat.matrix();
 
     // add pose transformation to full matrix
+    mat(0, 3) = rs_pose.translation.x;
+    mat(1, 3) = rs_pose.translation.x;
+    mat(2, 3) = rs_pose.translation.x;
 
     // set bottom row
-
+    mat(3, 0) = 0;
+    mat(3, 1) = 0;
+    mat(3, 2) = 0;
+    mat(3, 3) = 1;
+    return mat;
 }
