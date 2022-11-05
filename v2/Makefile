@@ -1,11 +1,11 @@
 FLAGS := -g -std=c++17 -O -pg
 
-build: main kinematics arm vision
-	g++ -o build/main build/main.o build/kinematics.o build/vision.o build/arm.o -Lpigpio/build -lpigpio -lrealsense2 -pg
+build: main
+	g++ -o build/main build/main.o build/kinematics.o build/vision.o build/arm.o -Lpigpio/build -lpigpio -lrealsense2 -Lapriltag/build -lapriltag -pg -pthread
 	@echo "\033[0;32mBUILD SUCCESSFULL\\033[0m\n\n"
 
 main: src/main.cpp
-	g++ -c ${FLAGS} -o build/main.o src/main.cpp -I/usr/include/eigen3
+	g++ -c ${FLAGS} -o build/main.o src/copied-main.cpp -I/usr/include/eigen3 -I/usr/local/include -Iapriltag/
 
 kinematics: src/kinematics.cpp src/kinematics.hpp
 	g++ -c ${FLAGS} -o build/kinematics.o src/kinematics.cpp -I/usr/include/eigen3

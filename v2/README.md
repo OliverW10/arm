@@ -4,12 +4,14 @@ have a robotic arm you can hold and move around and it will keep the end of the 
 Uses a raspberry pi, a realsense t265 camera and pwm servo's.
 
 ### Libraries
-build system is a bit bad atm, ill learn how cmake works later
-
-realsense install:
+- install and build realsense so its in `/usr/local/lib` and `/usr/local/include` 
 https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md
 
-also needs eigen, [pigpio](https://github.com/joan2937/pigpio/) and [apriltag](https://github.com/AprilRobotics/apriltag/)
+- get the submodules with `git submodule init` then `git submodule update`
+
+- build the apriltag and pigpio submodules with cmake, `mkdir build; cd build; cmake ..; make`
+
+- also needs eigen in `/usr/include/eigen3`
 
 ### Modules:
 - `kinematics`:
@@ -18,11 +20,9 @@ also needs eigen, [pigpio](https://github.com/joan2937/pigpio/) and [apriltag](h
 
 
 - `vision`:
-    Use an intel realsense T265 to get a pose estimate, this has some drift as it is just a combination of accelerometer and optical flow. To improve this estimate use apriltags to rezero the pose.
+    Use an intel realsense T265 and apriltags to work out where it is and where the goal position is.
 
 
 - `arm`:
-    Do basic motion planning to smooth the servo's motion and then send the positions to the servo with pwm on the Pi's gpio pins. 
+    Does motion planning to smooth the servo's motion and then send the positions to the servo with pwm on the Pi's gpio pins. 
 
-
-- `main`:

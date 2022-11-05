@@ -15,34 +15,46 @@ Vision::Vision()
         return;
     }
     auto dev = devs.front();
-    // complains if no const
+    // get device id, needed to enable
     const char *serial_num_arr = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     std::string serial_num_str = std::string(serial_num_arr);
     std::cout << serial_num_str << "\n";
+
     cfg.enable_device(serial_num_str);
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     // have to enable both for some reason according to pose-and-image example
-    cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
-    cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
+    // cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
+    // cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
 
     pipe.start(cfg);
 }
 
-// should be called at >= 200hz
 void Vision::execute()
 {
-    rs2::frameset *frame;
+}
 
-    bool got_frame = pipe.poll_for_frames(frame);
-    if (got_frame)
-    {
-        last_frame = frame;
+void Vision::realsenseLoop(){
+    while(true){
+        // automatically frees mutex when it goes out of scope
+        std::lock_guard<std::mutex> lock(frame_mutex);
+
+        auto frames        = pipe.wait_for_frames();
+        auto fisheye_frame = frames.get_fisheye_frame(fisheye_sensor_idx);
+        auto frame_number  = fisheye_frame.get_frame_number();
+        auto camera_pose   = frames.get_pose_frame().get_pose_data();
+        // trys to get a pose frame
+        bool got_pose = pipe.try_wait_for_frames(&frames);
+        // check if frame is a pose frame
+        frames
+        if(rs2::pose_frame pf = frames.as<rs2::pose_frame>()){
+
+        }
     }
 }
 
 rs2_pose Vision::getPose()
 {
-    return last_frame->get_pose_frame().get_pose_data();
+    return last_pose;
 }
 
 Eigen::Matrix4d poseToMat(const rs2_pose &rs_pose){

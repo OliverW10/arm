@@ -44,7 +44,7 @@ Arm::~Arm(){
     #endif
 }
 
-bool Arm::setGoal(const Eigen::Vector3d goal){
+bool Arm::setGoal(const Eigen::Vector3d &goal){
     pos_goal = goal;
     bool success = kinematics.backwards_num(goal, jnt_goal);
     // std::cout << "goal:\n" << jnt_goal << "\n";

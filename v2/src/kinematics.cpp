@@ -102,8 +102,8 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     // delta used to calculate derivative
     const double h = 1e-9;
     // how much to move towards esimated zero
-    const double step = 0.05;
-    const double allowable_error = 0.0005; // 0.5mm
+    const double step = 0.03;
+    const double allowable_error = 0.00025; // 0.25mm
 
     int tries = 0;
     int iterations = 0;
@@ -113,7 +113,7 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     if(!ret){
         return false;
     }
-    // randomJntArray(out);
+
     JntArray next_joints;
     double base_error = 1e10;
     while (base_error > allowable_error)
@@ -162,6 +162,22 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
 
 bool ArmKinematics::isReachable(const Eigen::Vector3d &target)
 {
+	double x = target(0);
+	double y = target(1);
+	double z = target(2);
+	
+	// arm can reach behind itself but the ik dosent do that yet
+	if(x <= 0)
+		return false;
+
+	// check min and max dists
+	double dist = target.norm();
+	double min_dist = displacements[1].norm();
+	double max_dist = min_dist + displacements[2].norm() + displacements[3].norm();
+	if(dist < min_dist || dist > max_dist)
+		return false;
+
+	// 
     return true;
 }
 
