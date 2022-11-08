@@ -9,11 +9,13 @@
 #include <thread>
 #include "apriltag.h"
 
-class Vision{
+class Vision
+{
 public:
     Vision();
     Eigen::Matrix4d getPose();
     bool isActive();
+
 private:
     // loops to run on other threads
     // waits for and reads new realsense frames
@@ -33,7 +35,7 @@ private:
     // mutex for both the frame and pose
     std::mutex frame_mutex;
     // the last video frame
-    rs2::video_frame* fisheye_frame;
+    rs2::video_frame *fisheye_frame;
     // the last pose 'frame'
     rs2_pose rs_camera_pose;
     unsigned long long frame_number;
@@ -41,8 +43,6 @@ private:
     bool got_first_frame;
 
     Eigen::Matrix4d camera_pose;
-
-    const Eigen::Matrix4d camera_to_arm;
 };
 
 Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose);

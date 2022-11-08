@@ -9,10 +9,10 @@ const int num_joints = 3;
 
 typedef Eigen::Array<double, num_joints, 1> JntArray;
 
-
-class ArmKinematics{
+class ArmKinematics
+{
 public:
-	ArmKinematics();
+    ArmKinematics();
 
     Eigen::Vector3d forwards(const JntArray &joint_angles);
 
@@ -30,6 +30,9 @@ public:
     // checks if the position is possible to reach
     bool isReachable(const Eigen::Vector3d &target);
 
+    // moves the position so it is reachable
+    void clampToReachable(Eigen::Vector3d &target);
+
     // checks if the joint values are within the min and max constraints
     bool isJointsValid(const JntArray &joint_angles);
 
@@ -38,13 +41,13 @@ public:
 
     const JntArray min_angles = {-M_PI / 2, 0, -M_PI};
     const JntArray max_angles = {M_PI / 2, M_PI, 0};
+
 private:
     double getError(const JntArray &joints, const Eigen::Vector3d &target);
 
-
     // the displacements between each joint frame
     // first item is the displacments between the base frame and the first joint
-    Eigen::Vector3d displacements[num_joints+1];
+    Eigen::Vector3d displacements[num_joints + 1];
     // the axis around which the joint rotates, use Eigen::Vector3d::Unit?()
     Eigen::Vector3d joint_axis[num_joints];
 };

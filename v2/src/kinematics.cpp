@@ -12,7 +12,7 @@ ArmKinematics::ArmKinematics()
     joint_axis[1] = Eigen::Vector3d::UnitY();
     joint_axis[2] = Eigen::Vector3d::UnitY();
 
-    srand((unsigned int) time(0));
+    srand((unsigned int)time(0));
 }
 
 // #define DEBUG_FORWARDS
@@ -109,10 +109,9 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     int iterations = 0;
 
     // initalize to result of geometric backwards
-    bool ret = backwards_geo(target, out);
-    if(!ret){
+    bool ik_success = backwards_geo(target, out);
+    if (!ik_success)
         return false;
-    }
 
     JntArray next_joints;
     double base_error = 1e10;
@@ -139,10 +138,11 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
             // reset to random joints
             randomJntArray(out);
             std::cout << "IK: reached invalid joint position, reinitializing randomly\n";
-            if(isJointsValid(out) == false){
+            if (isJointsValid(out) == false)
+            {
                 std::cout << "created joint is bad\n";
             }
-            tries ++;
+            tries++;
             iterations = 0;
             // prevent failure if position is unreachable
             if (tries > 5)
@@ -150,35 +150,56 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
                 return false;
             }
         }
-        iterations ++;
-        if (iterations > 500){
-            std::cout << "IK: reached iteration cap of 500 with an error of " << base_error*100.0 << "cm\n";
+        iterations++;
+        if (iterations > 500)
+        {
+            std::cout << "IK: reached iteration cap of 500 with an error of " << base_error * 100.0 << "cm\n";
             return true; // still go something so return that
         }
     }
-    std::cout << "IK: reached desired accuracy of " << allowable_error*100.0 << "cm in " << iterations << " iterations\n";
+    std::cout << "IK: reached desired accuracy of " << allowable_error * 100.0 << "cm in " << iterations << " iterations\n";
     return true;
 }
 
 bool ArmKinematics::isReachable(const Eigen::Vector3d &target)
 {
-	double x = target(0);
-	double y = target(1);
-	double z = target(2);
-	
-	// arm can reach behind itself but the ik dosent do that yet
-	if(x <= 0)
-		return false;
+    double x = target(0);
+    double y = target(1);
 
-	// check min and max dists
-	double dist = target.norm();
-	double min_dist = displacements[1].norm();
-	double max_dist = min_dist + displacements[2].norm() + displacements[3].norm();
-	if(dist < min_dist || dist > max_dist)
-		return false;
+    // arm can reach behind itself but the ik dosent do that yet
+    if (x < 0)
+        return false;
 
-	// 
+    // check max dist
+    double dist = target.norm();
+    double max_dist = displacements[1].norm() + displacements[2].norm() + displacements[3].norm();
+    if (dist > max_dist)
+        return false;
+
+    // check min dist, check its not in the vertical cylinder created by first displacment
+    double horiz_dist = sqrt(x * x + y * y);
+    if (horiz_dist < displacements[1].norm())
+        return false;
+
     return true;
+}
+
+void ArmKinematics::clampToReachable(Eigen::Vector3d &target)
+{
+    // clamp to front hemisphere
+    target(0) = std::max(target(0), 0.0);
+
+    // clamp max dist
+    double dist = target.norm();
+    double max_dist = displacements[1].norm() + displacements[2].norm() + displacements[3].norm();
+    Eigen::Vector3d unit = target / target.norm();
+    target = std::min(dist, max_dist) * unit;
+
+    // clamp min dist
+    double horiz_dist = sqrt(target(0) * target(0) + target(1) * target(1));
+    double clamped_horiz_dist = std::max(horiz_dist, displacements[1].norm());
+    target(0) = clamped_horiz_dist * target(0) / horiz_dist;
+    target(1) = clamped_horiz_dist * target(1) / horiz_dist;
 }
 
 bool ArmKinematics::isJointsValid(const JntArray &joint_angles)

@@ -10,16 +10,17 @@
 #include "kinematics.hpp"
 #include <signal.h>
 
-
 #define SIM
 // #define DEBUG_PRINT
 
-class Arm{
+class Arm
+{
 public:
     Arm(int servo_pins[]);
     ~Arm();
-	bool setGoal(const Eigen::Vector3d &goal);
+    bool setGoal(Eigen::Vector3d goal);
     void execute();
+
 private:
     // maximum joint rotation speed (rad/s) and accel (rad/s^2)
     // TODO: measure this
@@ -39,17 +40,16 @@ private:
     JntArray jnt_speeds;
 
     ArmKinematics kinematics;
-    int* servo_pins;
+    int *servo_pins;
     // last iteration in microseconds
     long last_time;
 
-    // offset from 
+    // offset from
     const JntArray jnt_offsets = {0, 0, 0};
     const JntArray jnt_inverted = {1, 1, 1};
 
     // sends positions to the servos
     void sendCommands();
 };
-
 
 #endif // ARMH
