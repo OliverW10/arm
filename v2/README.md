@@ -9,7 +9,7 @@ https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md
 
 - get the submodules with `git submodule init` then `git submodule update`
 
-- build the apriltag and pigpio submodules with cmake, `mkdir build; cd build; cmake ..; make`
+- build the apriltag and pigpio submodules with cmake, `mkdir build && cd build && cmake .. && make`
 
 - also needs eigen in `/usr/include/eigen3`
 
@@ -20,7 +20,7 @@ https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md
 
 
 - `vision`:
-    Use an intel realsense T265 and apriltags to work out where it is and where the goal position is.
+    Use an intel realsense T265 and apriltags to work out where it is and where the goal position is. Runs a seperate thread for reading from the realsense camera and for running the apriltags stuff.
 
 
 - `arm`:

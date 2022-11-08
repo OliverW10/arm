@@ -45,6 +45,7 @@ Arm::~Arm(){
 }
 
 bool Arm::setGoal(const Eigen::Vector3d &goal){
+    // TODO: clamp goal to reachable
     pos_goal = goal;
     bool success = kinematics.backwards_num(goal, jnt_goal);
     // std::cout << "goal:\n" << jnt_goal << "\n";

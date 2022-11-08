@@ -10,11 +10,11 @@ int main(){
     int pins[3] = {5, 6, 7};
     Arm arm(pins);
     Vision vision;
-    Eigen::Vector3d goal;
-    goal << 0.1, 0, 0;
-    bool ret = arm.setGoal(goal);
-    if(ret){
-        std::cout << "failed to set goal, likely beacuse goal is invalid\n";
+    Eigen::Vector3d target;
+    target << 0.1, 0, 0;
+    bool success = arm.setGoal(target);
+    if(!success){
+        std::cout << "abcdef failed to set goal, likely beacuse goal is invalid\n";
         return -1;
     }
 
@@ -22,14 +22,17 @@ int main(){
     long start = std::chrono::steady_clock::now().time_since_epoch().count();
     const double delta = 0.2/100;
     while(true){
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        // vision.execute(); 
-        // Eigen::Matrix4f cameraPose = vision.getPose();
-        // goal(0) += delta;
-        // bool ret = arm.setGoal(goal);
-        // arm.execute();
-        // // time_sleep(0.01);
-        // loops ++;
+        if(vision.isActive()){
+            Eigen::Matrix4d arm_pose = vision.getPose();
+            std::cout << "pose from main thread:\n" << arm_pose << "\n\n";
+            // workout target reletive to arm
+            // goal = ??
+            // bool success = arm.setGoal(goal);
+            // arm.execute();
+        }else{
+            std::cout << "waiting for vision to start, should take max 10 seconds\n";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
     // long finish = std::chrono::steady_clock::now().time_since_epoch().count();

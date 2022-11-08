@@ -103,7 +103,7 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     const double h = 1e-9;
     // how much to move towards esimated zero
     const double step = 0.03;
-    const double allowable_error = 0.00025; // 0.25mm
+    const double allowable_error = 0.0005; // 0.25mm
 
     int tries = 0;
     int iterations = 0;

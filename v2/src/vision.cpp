@@ -2,6 +2,7 @@
 
 Vision::Vision()
 {
+    got_first_frame = false;
     // TODO: use device changed callback to detect a device being plugged in
     auto devs = ctx.query_devices();
     if (devs.size() == 0)
@@ -18,46 +19,78 @@ Vision::Vision()
     // get device id, needed to enable
     const char *serial_num_arr = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     std::string serial_num_str = std::string(serial_num_arr);
-    std::cout << serial_num_str << "\n";
+    std::cout << "serial number: " << serial_num_str << "\n";
 
     cfg.enable_device(serial_num_str);
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     // have to enable both for some reason according to pose-and-image example
-    // cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
-    // cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
+    cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
+    cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
 
-    pipe.start(cfg);
-}
-
-void Vision::execute()
-{
+    realsense_thread = std::thread(&Vision::realsenseLoop, this);
+    apriltag_thread = std::thread(&Vision::apriltagLoop, this);
 }
 
 void Vision::realsenseLoop(){
+    pipe.start(cfg);
+
+    int fps_count = 0;
+    auto last_print = std::chrono::system_clock::now();
+
+    rs2::frameset frames;
     while(true){
-        // automatically frees mutex when it goes out of scope
-        std::lock_guard<std::mutex> lock(frame_mutex);
+        // blocks until frames are ready
+        bool got_frame = pipe.poll_for_frames(&frames);
+        if(got_frame){
+            got_first_frame = true;
+            frame_mutex.lock();
+            
+            auto temp_fisheye_frame = frames.get_fisheye_frame(1); // left camera
+            fisheye_frame->keep();
+            fisheye_frame = &(temp_fisheye_frame);
+            frame_number = fisheye_frame->get_frame_number();
+            rs_camera_pose = frames.get_pose_frame().get_pose_data();
 
-        auto frames        = pipe.wait_for_frames();
-        auto fisheye_frame = frames.get_fisheye_frame(fisheye_sensor_idx);
-        auto frame_number  = fisheye_frame.get_frame_number();
-        auto camera_pose   = frames.get_pose_frame().get_pose_data();
-        // trys to get a pose frame
-        bool got_pose = pipe.try_wait_for_frames(&frames);
-        // check if frame is a pose frame
-        frames
-        if(rs2::pose_frame pf = frames.as<rs2::pose_frame>()){
+            // TODO: set by apriltags
+            camera_pose = poseToTransform(rs_camera_pose);
 
+            frame_mutex.unlock();
+            last_frame = std::chrono::system_clock::now();      
+
+            fps_count += 1;
+            auto now = std::chrono::system_clock::now();
+            if (now - last_print >= std::chrono::seconds(1)) {
+                // std::cout << "realsense fps: " << fps_count << "\n";
+                std::cout << "pose from rs thread:\n" << camera_pose << "\n\n";
+                fps_count = 0;
+                last_print = now;
+            }
+        }else{
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
+
     }
 }
 
-rs2_pose Vision::getPose()
-{
-    return last_pose;
+void Vision::apriltagLoop(){
+    while(true){
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }
 
-Eigen::Matrix4d poseToMat(const rs2_pose &rs_pose){
+bool Vision::isActive(){
+    auto now = std::chrono::system_clock::now();
+    return got_first_frame && now-last_frame < std::chrono::milliseconds(500);
+}
+
+Eigen::Matrix4d Vision::getPose()
+{
+    // releases mutex when it goes out of scope
+    std::lock_guard<std::mutex> lock(frame_mutex);
+    return camera_pose;
+}
+
+Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose){
     // create matrix
     Eigen::Matrix4d mat;
 
@@ -67,8 +100,8 @@ Eigen::Matrix4d poseToMat(const rs2_pose &rs_pose){
 
     // add pose transformation to full matrix
     mat(0, 3) = rs_pose.translation.x;
-    mat(1, 3) = rs_pose.translation.x;
-    mat(2, 3) = rs_pose.translation.x;
+    mat(1, 3) = rs_pose.translation.y;
+    mat(2, 3) = rs_pose.translation.z;
 
     // set bottom row
     mat(3, 0) = 0;
