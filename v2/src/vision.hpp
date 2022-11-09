@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 #include <mutex>
 #include <thread>
-#include "apriltag.h"
+// #include "apriltag.h"
 
 class Vision
 {
@@ -15,7 +15,6 @@ public:
     Vision();
     Eigen::Matrix4d getPose();
     bool isActive();
-
 private:
     // loops to run on other threads
     // waits for and reads new realsense frames

@@ -7,3 +7,6 @@
 [submodule "v2/opencv"]
 	path = v2/opencv
 	url = https://github.com/opencv/opencv.git
+[submodule "v2/librealsense"]
+	path = v2/librealsense
+	url = https://github.com/IntelRealSense/librealsense.git

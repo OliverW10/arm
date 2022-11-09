@@ -8,14 +8,17 @@ Vision::Vision()
     if (devs.size() == 0)
     {
         std::cerr << "No realsense camera found\n";
+        has_device = false;
         return;
     }
     if (devs.size() > 1)
     {
         std::cerr << "Too many realsense cameras found\n";
+        has_device = false;
         return;
     }
     auto dev = devs.front();
+    has_device = true;
     // get device id, needed to enable
     const char *serial_num_arr = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     std::string serial_num_str = std::string(serial_num_arr);

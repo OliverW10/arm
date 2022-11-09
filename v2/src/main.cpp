@@ -42,7 +42,7 @@ int main()
             goal(0) = target(0) - arm_pose(3, 0);
             goal(1) = target(1) - arm_pose(3, 1);
             goal(2) = target(2) - arm_pose(3, 2);
-            goal *= arm_pose.block<3, 3>(0, 0).inverse();
+            goal = arm_pose.block<3, 3>(0, 0).inverse() * goal;
             bool success = arm.setGoal(goal);
             arm.execute();
         }
