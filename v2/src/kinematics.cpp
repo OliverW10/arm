@@ -112,6 +112,7 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     bool ik_success = backwards_geo(target, out);
     if (!ik_success)
         return false;
+    std::cout << "inital ik error: " << getError(out, target) << "\n";
 
     JntArray next_joints;
     double base_error = 1e10;

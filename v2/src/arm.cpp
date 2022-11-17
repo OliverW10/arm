@@ -53,9 +53,24 @@ bool Arm::setGoal(Eigen::Vector3d goal)
     // TODO: clamp goal to reachable
     kinematics.clampToReachable(goal);
     pos_goal = goal;
-    bool success = kinematics.backwards_num(goal, jnt_goal);
+    // using geo for now cause somehow num broke
+    bool success = kinematics.backwards_geo(goal, jnt_goal);
+    if(first){
+        jnt_positions = jnt_goal;
+    }
     // std::cout << "goal:\n" << jnt_goal << "\n";
+    first = false;
     return success;
+}
+
+bool Arm::setJoints(const JntArray &jnts)
+{
+    jnt_goal = jnts;
+    if(first){
+        jnt_positions = jnt_goal;
+    }
+    first = false;
+    return kinematics.isJointsValid(jnts);
 }
 
 void Arm::execute()
