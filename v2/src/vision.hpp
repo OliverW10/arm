@@ -38,7 +38,7 @@ private:
     // the last pose 'frame'
     rs2_pose rs_camera_pose;
     unsigned long long frame_number;
-    std::chrono::time_point<std::chrono::system_clock> last_frame;
+    std::chrono::time_point<std::chrono::steady_clock> last_frame;
     bool got_first_frame;
 
     Eigen::Matrix4d camera_pose;

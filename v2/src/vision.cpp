@@ -39,7 +39,7 @@ void Vision::realsenseLoop()
     pipe.start(cfg);
 
     int fps_count = 0;
-    auto last_print = std::chrono::system_clock::now();
+    auto last_print = std::chrono::steady_clock::now();
 
     rs2::frameset frames;
     while (true)
@@ -61,10 +61,10 @@ void Vision::realsenseLoop()
             camera_pose = poseToTransform(rs_camera_pose);
 
             frame_mutex.unlock();
-            last_frame = std::chrono::system_clock::now();
+            last_frame = std::chrono::steady_clock::now();
 
             fps_count += 1;
-            auto now = std::chrono::system_clock::now();
+            auto now = std::chrono::steady_clock::now();
             if (now - last_print >= std::chrono::seconds(1))
             {
                 // std::cout << "realsense fps: " << fps_count << "\n";
@@ -91,7 +91,7 @@ void Vision::apriltagLoop()
 
 bool Vision::isActive()
 {
-    auto now = std::chrono::system_clock::now();
+    auto now = std::chrono::steady_clock::now();
     return got_first_frame && now - last_frame < std::chrono::milliseconds(500);
 }
 
@@ -112,6 +112,7 @@ Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose)
     mat.block<3, 3>(0, 0) = quat.matrix();
 
     // add pose transformation to full matrix
+    // TODO: change from realsense coordinate system to mine
     mat(0, 3) = rs_pose.translation.x;
     mat(1, 3) = rs_pose.translation.y;
     mat(2, 3) = rs_pose.translation.z;

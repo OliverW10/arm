@@ -24,8 +24,8 @@ public:
 private:
     // maximum joint rotation speed (rad/s) and accel (rad/s^2)
     // TODO: measure this
-    const double MAX_SPEED = 1;
-    const double MAX_ACCEL = 5;
+    const double MAX_SPEED = 1.0;
+    const double MAX_ACCEL = 1.0;
 
     Eigen::Vector3d pos_goal;
     JntArray jnt_goal;
