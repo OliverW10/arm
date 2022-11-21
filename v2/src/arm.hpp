@@ -9,26 +9,36 @@
 #include <cmath>
 #include "kinematics.hpp"
 #include <signal.h>
+// these includes are in the pigpio examples
+#include <stdlib.h>
+
 
 // define sim if not running on a pi
-#define SIM
+// #define SIM
 // define debug print if you want lots of debug printing (TODO: idk bout this)
-// #define DEBUG_PRINT
+#define DEBUG_PRINT
+
+// this is kinda arbritary but has to be over 100
+#define FAKE_PWM_RANGE 4000
+// we get 9.25% of this many steps per 180 degrees
 
 class Arm
 {
 public:
     Arm(int _servo_pins[]);
     ~Arm();
+    // sets euclidean target
     bool setGoal(Eigen::Vector3d goal);
-    bool setJoints(const JntArray &jnts);
+    // set joint goals
+    // override: don't smooth motion
+    bool setJoints(const JntArray &jnts, bool override = false);
+    // if the smoothed position is at the goal position
+    bool atGoal();
     void execute();
     ArmKinematics kinematics;
 private:
     // current goal positions
     JntArray jnt_goal;
-    // euclidean position goal
-    Eigen::Vector3d pos_goal;
 
     // the arm uses servo's which don't give feedback on position or velocity
     // and just move at max speed to their given goal, to have more control the
@@ -43,12 +53,11 @@ private:
 
     // maximum joint rotation speed (rad/s) and accel (rad/s^2)
     // TODO: measure this
-    const double MAX_SPEED = 1.0;
-    const double MAX_ACCEL = 1.0;
-    // offsets from physical zero's
-    const JntArray jnt_offsets = {0, 0, 0};
-    // invert servo direction (1 or -1)
-    const JntArray jnt_inverted = {1, 1, 1};
+    const double MAX_SPEED = 5.0;
+    const double MAX_ACCEL = 3.0;
+    // pwm values for min and max angles joints can have
+    const JntArray jnt_pwm_min = {2400, 2400, 2400};
+    const JntArray jnt_pwm_max = {550, 700, 550};
     int *servo_pins;
 
     // last iteration in microseconds
@@ -59,5 +68,6 @@ private:
     // sends positions to the servos
     void sendCommands();
 };
+void quitHandler(int signum);
 
 #endif // ARMH

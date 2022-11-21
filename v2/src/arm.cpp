@@ -18,16 +18,28 @@ double NsToS(long ns)
 Arm::Arm(int _servo_pins[]) : kinematics(ArmKinematics())
 {
 #ifndef SIM
-    // most of the servo code was borrowed from the 'Servo Pulse Generator'
-    // in the C examples section here: http://abyz.me.uk/rpi/pigpio/examples.html
+    // change sample rate and ?peripheral used for timing?
+    // gpioCfgClock(4, 1, 0);
     if (gpioInitialise() < 0)
     {
         std::cerr << "Couldn't initialise pigpio\n";
-        abort();
+        exit(-1);
+    }
+    gpioSetSignalFunc(SIGINT, quitHandler);
+    for(int i = 0; i < num_joints; ++i){
+        // servo's use 50hz pwm
+        // gpioSetPWMfrequency(_servo_pins[i], 50);
+
+        // PWM range is the denominator of the duty cycle fraction
+        // gpioPwm() sets the numerator
+        // gpioSetPWMrange(_servo_pins[i], FAKE_PWM_RANGE);
+
+        // according to this https://abyz.me.uk/rpi/pigpio/cif.html#gpioSetPWMrange
+        // we have 1000 (at default sample rate) steps between 100% and 0% duty cycle
+        // we are only interested in (550 to 2400)/20000 = 9.25% of that or ~92 steps
     }
 #endif
     jnt_goal = JntArray(0, M_PI / 2, -M_PI / 2);
-    pos_goal = kinematics.forwards(jnt_goal);
     // assume it starts in startup position since we cant read it actual position
     jnt_positions = jnt_goal;
     jnt_speeds.setZero();
@@ -35,10 +47,16 @@ Arm::Arm(int _servo_pins[]) : kinematics(ArmKinematics())
     servo_pins = _servo_pins;
 
     last_time = getTimeNs();
+    first = true;
+}
+
+void quitHandler(int signum){
+    exit(0);
 }
 
 Arm::~Arm()
 {
+    std::cout << "arm destructor called\n";
 #ifndef SIM
     for (int i = 0; i < num_joints; ++i)
     {
@@ -52,7 +70,6 @@ bool Arm::setGoal(Eigen::Vector3d goal)
 {
     // TODO: clamp goal to reachable
     kinematics.clampToReachable(goal);
-    pos_goal = goal;
     // using geo for now cause somehow num broke
     bool success = kinematics.backwards_geo(goal, jnt_goal);
     if(first){
@@ -63,10 +80,10 @@ bool Arm::setGoal(Eigen::Vector3d goal)
     return success;
 }
 
-bool Arm::setJoints(const JntArray &jnts)
+bool Arm::setJoints(const JntArray &jnts, bool override)
 {
     jnt_goal = jnts;
-    if(first){
+    if(first || override){
         jnt_positions = jnt_goal;
     }
     first = false;
@@ -81,7 +98,7 @@ void Arm::execute()
 
     for (int i = 0; i < num_joints; ++i)
     {
-        double error = jnt_positions[i] - jnt_goal[i];
+        double error = jnt_goal[i] - jnt_positions[i];
         double a_error = abs(error);
         // calculate the maximum speed joint should be at for its current position
         // distance to stop from a speed u with an acceleration of a is
@@ -89,7 +106,7 @@ void Arm::execute()
         double cur_max_speed = sqrt(a_error * MAX_ACCEL);
         // get what speed we want to be going at now
         // min of maximum current speed and maximum achiveable joint speed in direction of error
-        double target_speed = copysign(std::min(cur_max_speed, MAX_SPEED), -error);
+        double target_speed = copysign(std::min(cur_max_speed, MAX_SPEED), error);
         double accel = std::clamp((target_speed - jnt_speeds[i]) / dt, -MAX_ACCEL, MAX_ACCEL);
         jnt_speeds[i] += accel * dt;
         jnt_positions[i] += jnt_speeds[i] * dt;
@@ -110,11 +127,19 @@ void Arm::sendCommands()
 #endif
     for (int i = 0; i < num_joints; ++i)
     {
-        double angle = jnt_positions[i] + jnt_offsets[i];
+        double angle = jnt_positions[i];
         // covert arm coordinate system to servo angle 0-1
-        double servo_angle = (angle - kinematics.min_angles[i]) / (kinematics.max_angles[i] - kinematics.min_angles[i]);
-        unsigned int servo_pulse_width = 1000 + servo_angle * 1000;
+        // double servo_angle = (angle - kinematics.min_angles[i]) / (kinematics.max_angles[i] - kinematics.min_angles[i]);
+        double servo_angle = (angle-kinematics.min_angles[i]) / (kinematics.max_angles[i]-kinematics.min_angles[i]);
+        servo_angle = std::clamp(servo_angle, 0.0, 1.0);
+        // scale angle to pulse width, in micro seconds
+        unsigned int servo_pulse_width = jnt_pwm_min[i] + servo_angle * (jnt_pwm_max[i]-jnt_pwm_min[i]);
+        // work out pwm duty cycle
+        // servo pulse width / microseconds per cycle get duty cycle (20 000), then * fake pwm range
+        // rearranged so it works with only ints
+        unsigned int servo_duty_cycle = (servo_pulse_width * FAKE_PWM_RANGE) / 20000;
 #ifndef SIM
+        // gpioPWM(servo_pins[i], servo_duty_cycle);
         gpioServo(servo_pins[i], servo_pulse_width);
 #endif
 
@@ -126,4 +151,10 @@ void Arm::sendCommands()
 #ifdef DEBUG_PRINT
     std::cout << "\n";
 #endif
+}
+
+bool Arm::atGoal()
+{
+    // TODO: write this
+    return true;
 }

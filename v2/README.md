@@ -30,6 +30,10 @@ cmake for crosscompiling the pi `cmake -D CMAKE_C_COMPILER=/opt/pi/tools/arm-bcm
 
 TODO: find good power supply, all phone chargers I tried result in undervoltage. can be checked with `vcgencmd get_throttled`. portable charger battery seems to be better but still reports undervoltages 
 
+compiling with -pg causes gpioInitalize to error with `sigHandler: Unhandled signal 27, terminating'
+
+https://elinux.org/RPi_Low-level_peripherals
+
 ## Modules:
 - `kinematics`:
     Initially used orocos kdl for the kinematics but decided to write it myself to learn.

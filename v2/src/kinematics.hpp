@@ -39,6 +39,8 @@ public:
     // generates a random valid joint array
     void randomJntArray(JntArray &out);
 
+    // minimum angles arms can achive
+    // min should be less than max
     const JntArray min_angles = {-M_PI / 2, 0, -M_PI};
     const JntArray max_angles = {M_PI / 2, M_PI, 0};
 
