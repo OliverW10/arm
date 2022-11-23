@@ -14,9 +14,9 @@
 
 
 // define sim if not running on a pi
-// #define SIM
+#define SIM
 // define debug print if you want lots of debug printing (TODO: idk bout this)
-#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 // this is kinda arbritary but has to be over 100
 #define FAKE_PWM_RANGE 4000
@@ -28,7 +28,7 @@ public:
     Arm(int _servo_pins[]);
     ~Arm();
     // sets euclidean target
-    bool setGoal(Eigen::Vector3d goal);
+    bool setGoal(Eigen::Vector3d goal, bool override = false);
     // set joint goals
     // override: don't smooth motion
     bool setJoints(const JntArray &jnts, bool override = false);
@@ -54,7 +54,7 @@ private:
     // maximum joint rotation speed (rad/s) and accel (rad/s^2)
     // TODO: measure this
     const double MAX_SPEED = 5.0;
-    const double MAX_ACCEL = 3.0;
+    const double MAX_ACCEL = 10.0;
     // pwm values for min and max angles joints can have
     const JntArray jnt_pwm_min = {2400, 2400, 2400};
     const JntArray jnt_pwm_max = {550, 700, 550};

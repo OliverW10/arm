@@ -32,6 +32,23 @@ Vision::Vision()
 
     realsense_thread = std::thread(&Vision::realsenseLoop, this);
     apriltag_thread = std::thread(&Vision::apriltagLoop, this);
+
+    //// Create transformation matricies between camera and arm
+    // rotation from t265 coordinate system to my coordinate system
+    // https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md
+    Eigen::Matrix3d t265_to_camera_rotation;
+    t265_to_camera_rotation = Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ());
+    Eigen::Matrix4d t265_to_camera = Eigen::Matrix4d::Identity();
+    t265_to_camera.block<3,3>(0, 0) = t265_to_camera_rotation;
+
+    // rotation from camera to arm
+    Eigen::Matrix3d camera_to_arm_rotation = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()).matrix();
+    Eigen::Matrix4d camera_to_arm = Eigen::Matrix4d::Identity();
+    camera_to_arm.block<3, 3>(0, 0) = camera_to_arm_rotation;
+    camera_to_arm.block<3, 1>(0, 3) = Eigen::Vector3d(-0.1, 0, 0.05);
+
+    Eigen::Matrix4d t265_to_arm = t265_to_camera * camera_to_arm;
+    std::cout << "t265 to arm:\n" << t265_to_arm;
 }
 
 void Vision::realsenseLoop()
@@ -49,18 +66,19 @@ void Vision::realsenseLoop()
         if (got_frame)
         {
             got_first_frame = true;
-            frame_mutex.lock();
+            frame_pose_mutex.lock();
 
+            // assign to variable so can be dereferanced
             auto temp_fisheye_frame = frames.get_fisheye_frame(1); // left camera
-            fisheye_frame->keep();
             fisheye_frame = &(temp_fisheye_frame);
+            // fisheye_frame->keep();
             frame_number = fisheye_frame->get_frame_number();
             rs_camera_pose = frames.get_pose_frame().get_pose_data();
 
             // TODO: set by apriltags
             camera_pose = poseToTransform(rs_camera_pose);
 
-            frame_mutex.unlock();
+            frame_pose_mutex.unlock();
             last_frame = std::chrono::steady_clock::now();
 
             fps_count += 1;
@@ -68,8 +86,8 @@ void Vision::realsenseLoop()
             if (now - last_print >= std::chrono::seconds(1))
             {
                 // std::cout << "realsense fps: " << fps_count << "\n";
-                std::cout << "pose from rs thread:\n"
-                          << camera_pose << "\n\n";
+                // std::cout << "pose from rs thread:\n"
+                //           << camera_pose << "\n\n";
                 fps_count = 0;
                 last_print = now;
             }
@@ -95,32 +113,35 @@ bool Vision::isActive()
     return got_first_frame && now - last_frame < std::chrono::milliseconds(500);
 }
 
-Eigen::Matrix4d Vision::getPose()
+Eigen::Matrix4d Vision::getArmPose()
 {
     // releases mutex when it goes out of scope
-    std::lock_guard<std::mutex> lock(frame_mutex);
+    std::lock_guard<std::mutex> lock(frame_pose_mutex);
     return camera_pose;
 }
 
-Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose)
+Eigen::Matrix4d Vision::poseToTransform(const rs2_pose &rs_pose)
 {
     // create matrix
-    Eigen::Matrix4d mat;
+    Eigen::Matrix4d mat = Eigen::Matrix4d::Identity();
 
     // add pose rotation matrix to full matrix
     Eigen::Quaterniond quat(rs_pose.rotation.w, rs_pose.rotation.x, rs_pose.rotation.y, rs_pose.rotation.z);
     mat.block<3, 3>(0, 0) = quat.matrix();
 
-    // add pose transformation to full matrix
-    // TODO: change from realsense coordinate system to mine
+    // mat(0, 3) = -rs_pose.translation.z;
+    // mat(1, 3) = -rs_pose.translation.x;
+    // mat(2, 3) = rs_pose.translation.y;
     mat(0, 3) = rs_pose.translation.x;
     mat(1, 3) = rs_pose.translation.y;
     mat(2, 3) = rs_pose.translation.z;
-
-    // set bottom row
-    mat(3, 0) = 0;
-    mat(3, 1) = 0;
-    mat(3, 2) = 0;
-    mat(3, 3) = 1;
     return mat;
+}
+
+
+Eigen::Matrix4d Vision::cameraToArm(const rs2_pose &rs_pose){
+    Eigen::Matrix4d camera = poseToTransform(rs_pose);
+    // rotate to arm frame
+    // TODO: check maths on all this
+    return camera * t265_to_arm;
 }

@@ -28,7 +28,7 @@ public:
     bool backwards_num(const Eigen::Vector3d &target, JntArray &out);
 
     // checks if the position is possible to reach
-    bool isReachable(const Eigen::Vector3d &target);
+    bool isReachable(const Eigen::Vector3d &target, bool print = false);
 
     // moves the position so it is reachable
     void clampToReachable(Eigen::Vector3d &target);

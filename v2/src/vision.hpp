@@ -13,8 +13,13 @@ class Vision
 {
 public:
     Vision();
-    Eigen::Matrix4d getPose();
+    Eigen::Matrix4d getArmPose();
     bool isActive();
+
+    // converts a rs2 pose to transformation matrix, dosent fix coordinate system
+    Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose);
+    // transforms from t265 coordinate system of camera to transform of arm base
+    Eigen::Matrix4d cameraToArm(const rs2_pose &rs_pose);
 private:
     // loops to run on other threads
     // waits for and reads new realsense frames
@@ -32,7 +37,7 @@ private:
     bool has_device;
 
     // mutex for both the frame and pose
-    std::mutex frame_mutex;
+    std::mutex frame_pose_mutex;
     // the last video frame
     rs2::video_frame *fisheye_frame;
     // the last pose 'frame'
@@ -42,8 +47,9 @@ private:
     bool got_first_frame;
 
     Eigen::Matrix4d camera_pose;
+
+    Eigen::Matrix4d t265_to_arm;
 };
 
-Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose);
 
 #endif // VISION

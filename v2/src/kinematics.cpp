@@ -162,25 +162,32 @@ bool ArmKinematics::backwards_num(const Eigen::Vector3d &target, JntArray &out)
     return true;
 }
 
-bool ArmKinematics::isReachable(const Eigen::Vector3d &target)
+bool ArmKinematics::isReachable(const Eigen::Vector3d &target, bool print)
 {
     double x = target(0);
     double y = target(1);
 
     // arm can reach behind itself but the ik dosent do that yet
-    if (x < 0)
+    if (x < 0){
+        if(print) std::cout << "unreachable: behind\n";
         return false;
+    }
 
     // check max dist
     double dist = target.norm();
     double max_dist = displacements[1].norm() + displacements[2].norm() + displacements[3].norm();
-    if (dist > max_dist)
+    if (dist > max_dist){
+        if(print) std::cout << "unreachable: too far\n";
         return false;
+    }
 
     // check min dist, check its not in the vertical cylinder created by first displacment
+    // TODO: actual unreachable is more complex
     double horiz_dist = sqrt(x * x + y * y);
-    if (horiz_dist < displacements[1].norm())
+    if (horiz_dist < displacements[1].norm()){
+        if(print) std::cout << "unreachable: too close\n";
         return false;
+    }
 
     return true;
 }
