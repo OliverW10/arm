@@ -5,9 +5,7 @@
 int main()
 {
     int pins[] = {4, 17, 18};
-    std::cout << "started\n";
     Arm arm(pins);
-    std::cout << "past constructor\n";
 
     Eigen::Vector3d target;
     target << 0.1, -0.1, 0;

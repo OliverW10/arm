@@ -2,6 +2,25 @@
 
 Vision::Vision()
 {
+
+    //// Create transformation matricies between camera and arm
+    // rotation from t265 coordinate system to my coordinate system
+    // https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md
+    Eigen::Matrix3d t265_to_camera_rotation;
+    t265_to_camera_rotation = Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ());
+    t265_to_camera = Eigen::Matrix4d::Identity();
+    t265_to_camera.block<3,3>(0, 0) = t265_to_camera_rotation;
+
+    // rotation from camera to arm
+    Eigen::Matrix3d camera_to_arm_rotation = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()).matrix();
+    camera_to_arm = Eigen::Matrix4d::Identity();
+    camera_to_arm.block<3, 3>(0, 0) = camera_to_arm_rotation;
+    camera_to_arm.block<3, 1>(0, 3) = Eigen::Vector3d(-0.1, 0, 0.05);
+
+    t265_to_arm.setIdentity();
+    // t265_to_arm.block<3, 3>(0, 0) = t265_to_camera_rotation * camera_to_arm_rotation;
+    // t265_to_arm.block<3, 1>(0, 3) = Eigen::Vector3d(-0.1, 0, 0.05);
+
     got_first_frame = false;
     // TODO: use device changed callback to detect a device being plugged in
     auto devs = ctx.query_devices();
@@ -32,23 +51,6 @@ Vision::Vision()
 
     realsense_thread = std::thread(&Vision::realsenseLoop, this);
     apriltag_thread = std::thread(&Vision::apriltagLoop, this);
-
-    //// Create transformation matricies between camera and arm
-    // rotation from t265 coordinate system to my coordinate system
-    // https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md
-    Eigen::Matrix3d t265_to_camera_rotation;
-    t265_to_camera_rotation = Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ());
-    Eigen::Matrix4d t265_to_camera = Eigen::Matrix4d::Identity();
-    t265_to_camera.block<3,3>(0, 0) = t265_to_camera_rotation;
-
-    // rotation from camera to arm
-    Eigen::Matrix3d camera_to_arm_rotation = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()).matrix();
-    Eigen::Matrix4d camera_to_arm = Eigen::Matrix4d::Identity();
-    camera_to_arm.block<3, 3>(0, 0) = camera_to_arm_rotation;
-    camera_to_arm.block<3, 1>(0, 3) = Eigen::Vector3d(-0.1, 0, 0.05);
-
-    Eigen::Matrix4d t265_to_arm = t265_to_camera * camera_to_arm;
-    std::cout << "t265 to arm:\n" << t265_to_arm;
 }
 
 void Vision::realsenseLoop()
@@ -65,7 +67,10 @@ void Vision::realsenseLoop()
         bool got_frame = pipe.poll_for_frames(&frames);
         if (got_frame)
         {
-            got_first_frame = true;
+            if(!got_first_frame){
+                std::cout << "got first realsense frame\n";
+                got_first_frame = true;
+            }
             frame_pose_mutex.lock();
 
             // assign to variable so can be dereferanced
@@ -76,7 +81,9 @@ void Vision::realsenseLoop()
             rs_camera_pose = frames.get_pose_frame().get_pose_data();
 
             // TODO: set by apriltags
-            camera_pose = poseToTransform(rs_camera_pose);
+            Eigen::Matrix4d camera_pose = poseToTransform(rs_camera_pose);
+            std::cout << "raw camera pose:\n" << camera_pose << "\n";
+            arm_pose = cameraToArm(camera_pose);
 
             frame_pose_mutex.unlock();
             last_frame = std::chrono::steady_clock::now();
@@ -86,8 +93,6 @@ void Vision::realsenseLoop()
             if (now - last_print >= std::chrono::seconds(1))
             {
                 // std::cout << "realsense fps: " << fps_count << "\n";
-                // std::cout << "pose from rs thread:\n"
-                //           << camera_pose << "\n\n";
                 fps_count = 0;
                 last_print = now;
             }
@@ -110,14 +115,14 @@ void Vision::apriltagLoop()
 bool Vision::isActive()
 {
     auto now = std::chrono::steady_clock::now();
-    return got_first_frame && now - last_frame < std::chrono::milliseconds(500);
+    return got_first_frame && now - last_frame < std::chrono::milliseconds(1000);
 }
 
 Eigen::Matrix4d Vision::getArmPose()
 {
     // releases mutex when it goes out of scope
     std::lock_guard<std::mutex> lock(frame_pose_mutex);
-    return camera_pose;
+    return arm_pose;
 }
 
 Eigen::Matrix4d Vision::poseToTransform(const rs2_pose &rs_pose)
@@ -139,9 +144,8 @@ Eigen::Matrix4d Vision::poseToTransform(const rs2_pose &rs_pose)
 }
 
 
-Eigen::Matrix4d Vision::cameraToArm(const rs2_pose &rs_pose){
-    Eigen::Matrix4d camera = poseToTransform(rs_pose);
-    // rotate to arm frame
-    // TODO: check maths on all this
-    return camera * t265_to_arm;
+Eigen::Matrix4d Vision::cameraToArm(const Eigen::Matrix4d &camera)
+{
+    // std::cout << "camera:\n" << camera << "\n";
+    return (t265_to_camera * camera) * camera_to_arm;
 }

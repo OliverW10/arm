@@ -19,7 +19,7 @@ public:
     // converts a rs2 pose to transformation matrix, dosent fix coordinate system
     Eigen::Matrix4d poseToTransform(const rs2_pose &rs_pose);
     // transforms from t265 coordinate system of camera to transform of arm base
-    Eigen::Matrix4d cameraToArm(const rs2_pose &rs_pose);
+    Eigen::Matrix4d cameraToArm(const Eigen::Matrix4d &camera);
 private:
     // loops to run on other threads
     // waits for and reads new realsense frames
@@ -46,8 +46,10 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> last_frame;
     bool got_first_frame;
 
-    Eigen::Matrix4d camera_pose;
+    Eigen::Matrix4d arm_pose;
 
+    Eigen::Matrix4d t265_to_camera;
+    Eigen::Matrix4d camera_to_arm;
     Eigen::Matrix4d t265_to_arm;
 };
 

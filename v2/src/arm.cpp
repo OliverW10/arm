@@ -69,6 +69,7 @@ Arm::~Arm()
 bool Arm::setGoal(Eigen::Vector3d goal, bool override)
 {
     Eigen::Vector3d pre_clamp_goal = goal;
+    // called so it prints out any issues
     kinematics.isReachable(goal, true);
     kinematics.clampToReachable(goal);
     // using geo for now cause somehow num broke
@@ -81,7 +82,6 @@ bool Arm::setGoal(Eigen::Vector3d goal, bool override)
     if(first || override){
         jnt_positions = jnt_goal;
     }
-    // std::cout << "goal:\n" << jnt_goal << "\n";
     first = false;
     return success;
 }
