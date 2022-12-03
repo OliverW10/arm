@@ -11,7 +11,8 @@ int main()
     Arm arm(pins);
     Vision vision;
     Eigen::Vector4d target;
-    target << 0.1, 0, 0, 1;
+    // target is t265 coordinate system
+    target << 0, 0, -0.15, 1;
 
     arm.setJoints(JntArray(0, M_PI, -M_PI));
 

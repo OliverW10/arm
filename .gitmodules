@@ -1,9 +1,9 @@
-[submodule "v2/pigpio"]
-	path = v2/pigpio
+[submodule "pigpio"]
+	path = pigpio
 	url = https://github.com/joan2937/pigpio
-[submodule "v2/apriltag"]
-	path = v2/apriltag
-	url = https://github.com/AprilRobotics/apriltag/
-[submodule "v2/librealsense"]
-	path = v2/librealsense
+[submodule "librealsense"]
+	path = librealsense
 	url = https://github.com/IntelRealSense/librealsense.git
+[submodule "apriltag"]
+	path = apriltag
+	url = https://github.com/AprilRobotics/apriltag/
