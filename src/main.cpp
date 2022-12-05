@@ -12,7 +12,7 @@ int main()
     Vision vision;
     Eigen::Vector4d target;
     // target is t265 coordinate system
-    target << 0, 0, -0.15, 1;
+    target << 0, 0, 0, 1;
 
     arm.setJoints(JntArray(0, M_PI, -M_PI));
 
@@ -27,17 +27,17 @@ int main()
     {
         Eigen::Matrix4d arm_pose = vision.getArmPose();
         // std::cout << "pose from main thread:\n"
-        //           << arm_pose << "\n\n";
+        //           << arm_pose.block<3, 1>(0, 3) << "\n\n";
         // find target relative to the arm
         Eigen::Vector4d _goal = arm_pose.inverse() * target;
         Eigen::Vector3d goal = _goal.block<3, 1>(0, 0);
-        // std::cout << "goal:\n" << goal << "\n";
+        std::cout << "goal:\n" << goal << "\n";
         bool success = arm.setGoal(goal);
         if(!success){
             // std::cout << "goal unreachable\n";
         }
         arm.execute();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     return 0;

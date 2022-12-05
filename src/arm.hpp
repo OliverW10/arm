@@ -11,10 +11,8 @@
 #include <signal.h>
 // these includes are in the pigpio examples
 #include <stdlib.h>
+#include "../real.h"
 
-
-// define sim if not running on a pi
-#define SIM
 // define debug print if you want lots of debug printing (TODO: idk bout this)
 // #define DEBUG_PRINT
 

@@ -17,9 +17,13 @@ Vision::Vision()
 
     cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
-    // have to enable both for some reason according to pose-and-image example
-    cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
-    cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
+    // was having issues with pose drifting off erratically large distances
+    // this thread indicates its an issues with usb 2 and that not using the image streams helps
+    // disabling the fisheye streams seemed to fix the issue
+    // https://support.intelrealsense.com/hc/en-us/community/posts/360036423993/comments/360009213553
+    // cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
+    // cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
+    // enable both streams according to pose-and-image example if you want one
 
     last_print = std::chrono::steady_clock::now();
 
@@ -103,20 +107,20 @@ void Vision::realsenseLoop(const rs2::frame& frame)
     if(auto fp = frame.as<rs2::pose_frame>()){
         auto rs_camera_pose = fp.get_pose_data();
         camera_pose = poseToTransform(rs_camera_pose);
-        std::cout << "raw camera pose:\n" << camera_pose << "\n";
     }else if(auto fs = frame.as<rs2::frameset>()){
-        std::cout << "got image frame\n";
+        std::cout << "got fisheye frame\n";
     }else{
-        std::cout << "got something weird in realsense callback\n";
     }
 
     frame_pose_mutex.unlock();
     last_frame = std::chrono::steady_clock::now();
 
     auto now = std::chrono::steady_clock::now();
-    if (now - last_print >= std::chrono::seconds(1))
+    if (now - last_print >= std::chrono::milliseconds(1000))
     {
         last_print = now;
+        // std::cout << "pose from callback:\n"
+        //           << camera_pose.block<3, 1>(0, 3) << "\n\n";
     }
 }
 

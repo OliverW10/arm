@@ -21,7 +21,11 @@ int main()
     const double r = 0.1;
     auto last_time = std::chrono::steady_clock::now();
     auto start = std::chrono::steady_clock::now();
-    arm.setJoints(JntArray(0, M_PI, -M_PI));
+    arm.setJoints(JntArray(0, 0, 0), true);
+    arm.execute();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return 0;
+
     while (true)
     {
         auto now = std::chrono::steady_clock::now();
