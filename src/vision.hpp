@@ -7,7 +7,10 @@
 #include <Eigen/Dense>
 #include <mutex>
 #include <thread>
+#include <iomanip>
 // #include "apriltag.h"
+
+#include "example-utils.hpp"
 
 class Vision
 {
@@ -32,9 +35,9 @@ private:
     std::thread apriltag_thread;
 
     // realsense objects
-    rs2::context ctx;
     rs2::pipeline pipe;
     rs2::config cfg;
+
     bool has_device;
     bool got_first_frame;
 

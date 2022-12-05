@@ -8,34 +8,88 @@ Vision::Vision()
                       1, 0, 0, 0,
                       0, 1, 0, 0,
                       0, 0, 0, 1;
-    // t265 returns 0 rotation as identity with y & z ones as -1
 
-    got_first_frame = false;
-    last_print = std::chrono::steady_clock::now();
-    // TODO: use device changed callback to detect a device being plugged in
-    auto devs = ctx.query_devices();
-    if (devs.size() != 1)
-    {
-        std::cerr << "too many or no realsense cameras: " << devs.size() << "\n";
-        has_device = false;
-        return;
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_POSE }, serial)){
+        exit(EXIT_SUCCESS);
     }
-    auto dev = devs.front();
-    has_device = true;
-    // get device id, needed to enable
-    const char *serial_num_arr = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-    std::string serial_num_str = std::string(serial_num_arr);
-    std::cout << "serial number: " << serial_num_str << "\n";
+    std::cout << "serial number: " << serial << "\n";
 
-    cfg.enable_device(serial_num_str);
+    cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     // have to enable both for some reason according to pose-and-image example
     cfg.enable_stream(RS2_STREAM_FISHEYE, 1, RS2_FORMAT_Y8);
     cfg.enable_stream(RS2_STREAM_FISHEYE, 2, RS2_FORMAT_Y8);
 
+    last_print = std::chrono::steady_clock::now();
+
+    got_first_frame = false;
     // use lambda to capture this
-    pipe.start(cfg, [&](const rs2::frame& frame){realsenseLoop(frame);});
+    auto callback = [&](const rs2::frame& frame){realsenseLoop(frame);};
+    pipe.start(cfg, callback);
 }
+
+// copied from realsense examples
+bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& out_serial)
+{
+    rs2::context ctx;
+    auto devs = ctx.query_devices();
+    std::vector <rs2_stream> unavailable_streams = stream_requests;
+    for (auto dev : devs)
+    {
+        std::map<rs2_stream, bool> found_streams;
+        for (auto& type : stream_requests)
+        {
+            found_streams[type] = false;
+            for (auto& sensor : dev.query_sensors())
+            {
+                for (auto& profile : sensor.get_stream_profiles())
+                {
+                    if (profile.stream_type() == type)
+                    {
+                        found_streams[type] = true;
+                        unavailable_streams.erase(std::remove(unavailable_streams.begin(), unavailable_streams.end(), type), unavailable_streams.end());
+                        if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                            out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                    }
+                }
+            }
+        }
+        // Check if all streams are found in current device
+        bool found_all_streams = true;
+        for (auto& stream : found_streams)
+        {
+            if (!stream.second)
+            {
+                found_all_streams = false;
+                break;
+            }
+        }
+        if (found_all_streams)
+            return true;
+    }
+    // After scanning all devices, not all requested streams were found
+    for (auto& type : unavailable_streams)
+    {
+        switch (type)
+        {
+        case RS2_STREAM_POSE:
+        case RS2_STREAM_FISHEYE:
+            std::cerr << "Connect T26X and rerun the demo" << std::endl;
+            break;
+        case RS2_STREAM_DEPTH:
+            std::cerr << "The demo requires Realsense camera with DEPTH sensor" << std::endl;
+            break;
+        case RS2_STREAM_COLOR:
+            std::cerr << "The demo requires Realsense camera with RGB sensor" << std::endl;
+            break;
+        default:
+            throw std::runtime_error("The requested stream: " + std::to_string(type) + ", for the demo is not supported by connected devices!"); // stream type
+        }
+    }
+    return false;
+}
+
 
 void Vision::realsenseLoop(const rs2::frame& frame)
 {
@@ -51,6 +105,9 @@ void Vision::realsenseLoop(const rs2::frame& frame)
         camera_pose = poseToTransform(rs_camera_pose);
         std::cout << "raw camera pose:\n" << camera_pose << "\n";
     }else if(auto fs = frame.as<rs2::frameset>()){
+        std::cout << "got image frame\n";
+    }else{
+        std::cout << "got something weird in realsense callback\n";
     }
 
     frame_pose_mutex.unlock();
