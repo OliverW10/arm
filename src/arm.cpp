@@ -1,4 +1,10 @@
 #include "arm.hpp"
+#include <pigpio.h>
+#include <iostream>
+#include <algorithm>
+#include <cmath>
+#include <signal.h>
+#include <stdlib.h>
 
 // getting weird errors of multple defenitions when putting these in header so they go here
 // gets current unix echo time in nanoseconds

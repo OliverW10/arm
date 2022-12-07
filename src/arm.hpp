@@ -1,16 +1,9 @@
 #ifndef ARMH
 #define ARMH
 
-#include <iostream>
-#include <pigpio.h>
 #include <Eigen/Core>
 #include <chrono>
-#include <algorithm>
-#include <cmath>
 #include "kinematics.hpp"
-#include <signal.h>
-// these includes are in the pigpio examples
-#include <stdlib.h>
 #include "../real.hpp"
 
 // define debug print if you want lots of debug printing (TODO: idk bout this)
@@ -66,6 +59,5 @@ private:
     // sends positions to the servos
     void sendCommands();
 };
-void quitHandler(int signum);
 
 #endif // ARMH

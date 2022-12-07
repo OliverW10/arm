@@ -1,4 +1,6 @@
 #include "kinematics.hpp"
+#include <iostream>
+#include <Eigen/Dense>
 
 ArmKinematics::ArmKinematics()
 {

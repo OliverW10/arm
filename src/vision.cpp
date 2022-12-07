@@ -1,5 +1,9 @@
 #include "vision.hpp"
 #include "Eigen/Dense"
+#include <iomanip>
+#include <librealsense2/h/rs_types.h>
+#include <librealsense2/hpp/rs_export.hpp>
+#include "example-utils.hpp"
 
 Vision::Vision()
 {

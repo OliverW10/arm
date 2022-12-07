@@ -1,9 +1,8 @@
 #ifndef KINEMATICS
 #define KINEMATICS
 
-#include <iostream>
 #include <math.h>
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 const int num_joints = 3;
 
