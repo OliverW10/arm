@@ -1,4 +1,5 @@
 #include "vision.hpp"
+#include "Eigen/Dense"
 
 Vision::Vision()
 {

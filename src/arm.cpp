@@ -25,7 +25,8 @@ Arm::Arm(int _servo_pins[]) : kinematics(ArmKinematics())
         std::cerr << "Couldn't initialise pigpio\n";
         exit(-1);
     }
-    gpioSetSignalFunc(SIGINT, quitHandler);
+    // auto quitHandler = [&](){clean();};
+    // gpioSetSignalFunc(SIGINT, quitHandler);
     for(int i = 0; i < num_joints; ++i){
         // servo's use 50hz pwm
         // gpioSetPWMfrequency(_servo_pins[i], 50);
@@ -50,27 +51,29 @@ Arm::Arm(int _servo_pins[]) : kinematics(ArmKinematics())
     first = true;
 }
 
-void quitHandler(int signum){
-    exit(0);
-}
-
 Arm::~Arm()
 {
     std::cout << "arm destructor called\n";
-#ifndef SIM
+    clean();
+}
+
+void Arm::clean(){
+    std::cout << "arm clean called\n";
+    #ifndef SIM
     for (int i = 0; i < num_joints; ++i)
     {
         gpioServo(servo_pins[i], 0);
     }
     gpioTerminate();
-#endif
+    #endif
+    exit(0);
 }
 
 bool Arm::setGoal(Eigen::Vector3d goal, bool override)
 {
     Eigen::Vector3d pre_clamp_goal = goal;
     // called so it prints out any issues
-    // kinematics.isReachable(goal, true);
+    kinematics.isReachable(goal, true);
     kinematics.clampToReachable(goal);
     // using geo for now cause somehow num broke
     JntArray last_jnt_goal = jnt_goal;

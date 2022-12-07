@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <pigpio.h>
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <chrono>
 #include <algorithm>
 #include <cmath>
@@ -62,7 +62,7 @@ private:
     long last_time;
     bool first;
 
-
+    void clean();
     // sends positions to the servos
     void sendCommands();
 };

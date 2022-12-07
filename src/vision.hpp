@@ -4,7 +4,7 @@
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_export.hpp>
 #include <librealsense2/h/rs_types.h>
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <mutex>
 #include <thread>
 #include <iomanip>

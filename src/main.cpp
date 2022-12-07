@@ -1,4 +1,4 @@
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <math.h>
 #include <random>
 #include <thread>
@@ -12,7 +12,7 @@ int main()
     Vision vision;
     Eigen::Vector4d target;
     // target is t265 coordinate system
-    target << 0, 0, 0, 1;
+    target << 0.15, 0, 0, 1;
 
     arm.setJoints(JntArray(0, M_PI, -M_PI));
 
