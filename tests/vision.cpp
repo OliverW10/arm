@@ -20,31 +20,31 @@ rs2_pose createRsPose(float x, float y, float z, Eigen::Matrix3d rot){
 
 int main(){
     Eigen::Vector4d target;
+    // goal in t265 coordinate system
     target << 0, 0, -0.15, 1;
     Vision vision;
 
     Eigen::Matrix4d pose;
     pose << 1, 0, 0, 0,
-            0,-1, 0, 0,
-            0, 0,-1, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
             0, 0, 0, 1;
-
     Eigen::Vector4d _goal = pose.inverse() * target;
     Eigen::Vector4d fixed_goal = vision.t265_to_camera * _goal;
-    std::cout << "init goal:\n" << fixed_goal << "\n";
+    std::cout << "goal from 0, 0, 0:\n" << fixed_goal << "\n";
 
     // 10cm backwards
     pose << 1, 0, 0, 0,
-            0,-1, 0, 0,
-            0, 0,-1, 0.1,
+            0, 1, 0, 0,
+            0, 0, 1, 0.1,
             0, 0, 0, 1;
     _goal = pose.inverse() * target;
     fixed_goal = vision.t265_to_camera * _goal;
-    std::cout << "\n10cm backwards goal:\n" << fixed_goal << "\n";
+    std::cout << "\ngoal from 10cm backwards:\n" << fixed_goal << "\n";
 
     // -90 degrees around vertical axis
     pose << 0, 0, 1, 0,
-            0,-1, 0, 0,
+            0, 1, 0, 0,
             1, 0, 0, 0,
             0, 0, 0, 1;
     _goal = pose.inverse() * target;

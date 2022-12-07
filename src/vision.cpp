@@ -12,7 +12,11 @@ Vision::Vision()
     std::string serial;
     if (!device_with_streams({ RS2_STREAM_POSE }, serial)){
         exit(EXIT_SUCCESS);
+        // std::cout << "no camera, continuing without\n";
+        // has_device = false;
+        // return;
     }
+    has_device = true;
     std::cout << "serial number: " << serial << "\n";
 
     cfg.enable_device(serial);
@@ -142,7 +146,7 @@ Eigen::Matrix4d Vision::getArmPose()
 {
     // releases mutex when it goes out of scope
     std::lock_guard<std::mutex> lock(frame_pose_mutex);
-    return t265_to_camera * camera_pose;
+    return camera_pose;
 }
 
 Eigen::Matrix4d Vision::poseToTransform(const rs2_pose &rs_pose)

@@ -25,13 +25,16 @@ int main()
 
     while (true)
     {
-        Eigen::Matrix4d arm_pose = vision.getArmPose();
-        // std::cout << "pose from main thread:\n"
-        //           << arm_pose.block<3, 1>(0, 3) << "\n\n";
+        Eigen::Matrix4d arm_pose = vision.t265_to_camera * vision.getArmPose();
+        std::cout << "pose from main thread:\n"
+                  << arm_pose << "\n";
         // find target relative to the arm
         Eigen::Vector4d _goal = arm_pose.inverse() * target;
-        Eigen::Vector3d goal = _goal.block<3, 1>(0, 0);
-        std::cout << "goal:\n" << goal << "\n";
+        // fix coordinate system
+        Eigen::Vector4d fixed_goal = vision.t265_to_camera * _goal;
+        // remove end 1
+        Eigen::Vector3d goal = fixed_goal.block<3, 1>(0, 0);
+        // std::cout << "goal:\n" << goal << "\n";
         bool success = arm.setGoal(goal);
         if(!success){
             // std::cout << "goal unreachable\n";

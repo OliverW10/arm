@@ -70,7 +70,7 @@ bool Arm::setGoal(Eigen::Vector3d goal, bool override)
 {
     Eigen::Vector3d pre_clamp_goal = goal;
     // called so it prints out any issues
-    kinematics.isReachable(goal, true);
+    // kinematics.isReachable(goal, true);
     kinematics.clampToReachable(goal);
     // using geo for now cause somehow num broke
     JntArray last_jnt_goal = jnt_goal;

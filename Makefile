@@ -30,5 +30,5 @@ build/kinematics.o: src/kinematics.cpp src/kinematics.hpp
 build/vision.o: src/vision.cpp src/vision.hpp
 	g++ -c ${FLAGS} -o $@ $< -Ilibrealsense/include -Iapriltag
 
-build/arm.o: src/arm.cpp src/arm.hpp src/kinematics.hpp
+build/arm.o: src/arm.cpp src/arm.hpp src/kinematics.hpp real.hpp
 	g++ -c ${FLAGS} -o $@ $< -Ipigpio
